@@ -37,8 +37,9 @@ class Apple(Item):
         self.location = None
 
     def refresh(self, snake):
-        available_position = set(itertools.product(range(self.cell_width - 1), range(self.cell_height - 1))
-                                 ) - set(snake.body)
+        available_position = (
+            set(itertools.product(range(self.cell_width - 1), range(self.cell_height - 1))) - set(snake.body)
+        )
         try:
             location = random.sample(available_position, 1)[0]
         except ValueError:
@@ -80,7 +81,6 @@ class Snake(Item):
 
     def grow(self):
         x, y = self.get_head()
-        print(x, y)
         if self.direction == UP:
             y -= 1
         elif self.direction == DOWN:
@@ -168,7 +168,7 @@ class SnakeGame(Item):
             snake.move(apple=apple)
 
             if snake.is_dead:
-                return
+                break
             elif snake.eaten:
                 apple.refresh(snake=snake)
 
@@ -177,9 +177,10 @@ class SnakeGame(Item):
             self.draw_snake(snake.body)
 
             self.draw_apple(apple.location)
-            self.draw_score(snake.score)
             pygame.display.update()
             self.clock.tick(self.fps)
+
+        print(snake.score)
 
     def checkForKeyPress(self):
         if len(pygame.event.get(QUIT)) > 0:
@@ -203,20 +204,12 @@ class SnakeGame(Item):
                 pygame.event.get()  # clear event queue
                 return
 
-    def draw_score(self, score):
-        scoreSurf = self.basic_font.render('Score: %s' % score, True, WHITE)
-        scoreRect = scoreSurf.get_rect()
-        scoreRect.topleft = (self.window_width - 120, 10)
-        self.display.blit(scoreSurf, scoreRect)
-
     def draw_snake(self, snake_body):
         for snake_block_x, snake_block_y in snake_body:
             x = snake_block_x * self.cell_size
             y = snake_block_y * self.cell_size
             snake_block = pygame.Rect(x, y, self.cell_size, self.cell_size)
-            pygame.draw.rect(self.display, DARKGREEN, snake_block)
-            snake_block_inner = pygame.Rect(x + 4, y + 4, self.cell_size - 8, self.cell_size - 8)
-            pygame.draw.rect(self.display, GREEN, snake_block_inner)
+            pygame.draw.rect(self.display, WHITE, snake_block)
 
     def draw_apple(self, apple_location):
         apple_x, apple_y = apple_location
