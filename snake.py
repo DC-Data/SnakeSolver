@@ -8,18 +8,10 @@ import sys
 from dataclasses import dataclass
 from pygame.locals import *
 
-#             R    G    B
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-DARKGREEN = (0, 155, 0)
 DARKGRAY = (40, 40, 40)
-
-UP = 'up'
-DOWN = 'down'
-LEFT = 'left'
-RIGHT = 'right'
 
 
 @dataclass
@@ -48,16 +40,22 @@ class Apple(Item):
 
 
 class Snake(Item):
-    def __init__(self, initial_length=3):
+    def __init__(self, initial_length: int = 3, direction: str = 'right'):
+        """
+        :param initial_length: The initial length of the snake
+        :param direction: Snake's default direction
+        """
+        self.initial_length = initial_length
+        self.direction = direction
+
+        # TODO: start from the middle instead
         if not 0 < initial_length < self.cell_width:
             raise ValueError(f"Initial_length should fall in (0, {self.cell_width})")
         start_x = random.randint(initial_length + 2, self.cell_width - (initial_length + 3))
         start_y = random.randint(initial_length + 2, self.cell_height - (initial_length + 3))
 
         self.body = list(zip([start_x] * initial_length, range(start_y, start_y - initial_length, -1)))
-        self.initial_length = initial_length
         self.score = 0
-        self.direction = RIGHT
         self.is_dead = False
         self.eaten = False
 
@@ -81,13 +79,13 @@ class Snake(Item):
 
     def grow(self):
         x, y = self.get_head()
-        if self.direction == UP:
+        if self.direction == 'up':
             y -= 1
-        elif self.direction == DOWN:
+        elif self.direction == 'down':
             y += 1
-        elif self.direction == LEFT:
+        elif self.direction == 'left':
             x -= 1
-        elif self.direction == RIGHT:
+        elif self.direction == 'right':
             x += 1
         self.body.append((x, y))
 
@@ -151,14 +149,14 @@ class SnakeGame(Item):
                 if event.type == QUIT:
                     self.terminate()
                 elif event.type == KEYDOWN:
-                    if (event.key == K_LEFT or event.key == K_a) and snake.direction != RIGHT:
-                        snake.direction = LEFT
-                    elif (event.key == K_RIGHT or event.key == K_d) and snake.direction != LEFT:
-                        snake.direction = RIGHT
-                    elif (event.key == K_UP or event.key == K_w) and snake.direction != DOWN:
-                        snake.direction = UP
-                    elif (event.key == K_DOWN or event.key == K_s) and snake.direction != UP:
-                        snake.direction = DOWN
+                    if (event.key == K_LEFT or event.key == K_a) and snake.direction != 'right':
+                        snake.direction = 'left'
+                    elif (event.key == K_RIGHT or event.key == K_d) and snake.direction != 'left':
+                        snake.direction = 'right'
+                    elif (event.key == K_UP or event.key == K_w) and snake.direction != 'down':
+                        snake.direction = 'up'
+                    elif (event.key == K_DOWN or event.key == K_s) and snake.direction != 'up':
+                        snake.direction = 'down'
                     elif event.key == K_ESCAPE:
                         self.terminate()
 
