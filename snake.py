@@ -5,6 +5,7 @@ import itertools
 import pygame
 import random
 import sys
+import time
 from dataclasses import dataclass
 from pygame.locals import *
 
@@ -133,7 +134,9 @@ class SnakeGame(Item):
     def launch(self):
         while True:
             self.game()
-            self.showGameOverScreen()
+            # self.showGameOverScreen()
+            self.pause_game()
+            print('loop')
 
     def game(self):
         snake = Snake()
@@ -148,6 +151,8 @@ class SnakeGame(Item):
             for event in pygame.event.get():  # event handling loop
                 if event.type == QUIT:
                     self.terminate()
+
+                # TODO: add Player class, which accepts snake and apple, cache the location and outputs the direction
                 elif event.type == KEYDOWN:
                     if (event.key == K_LEFT or event.key == K_a) and snake.direction != 'right':
                         snake.direction = 'left'
@@ -180,27 +185,22 @@ class SnakeGame(Item):
 
         print(snake.score)
 
-    def checkForKeyPress(self):
-        if len(pygame.event.get(QUIT)) > 0:
-            self.terminate()
-
-        keyUpEvents = pygame.event.get(KEYUP)
-        if len(keyUpEvents) == 0:
-            return None
-        if keyUpEvents[0].key == K_ESCAPE:
-            self.terminate()
-        return keyUpEvents[0].key
-
     @staticmethod
     def terminate():
         pygame.quit()
         sys.exit()
 
-    def showGameOverScreen(self):
+    def pause_game(self):
         while True:
-            if self.checkForKeyPress():
-                pygame.event.get()  # clear event queue
-                return
+            time.sleep(0.2)
+            for event in pygame.event.get():  # event handling loop
+                if event.type == QUIT:
+                    self.terminate()
+                if event.type == KEYUP:
+                    if event.key == K_ESCAPE:
+                        self.terminate()
+                    else:
+                        return
 
     def draw_snake(self, snake_body):
         for snake_block_x, snake_block_y in snake_body:
