@@ -8,6 +8,7 @@ import sys
 import time
 from dataclasses import dataclass
 from pygame.locals import *
+from collections import deque
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -38,6 +39,10 @@ class Apple(Item):
         except ValueError:
             location = None
         self.location = location
+
+
+def flattener(l):
+    return [item for sublist in l for item in sublist]
 
 
 class Snake(Item):
@@ -75,9 +80,18 @@ class Snake(Item):
         self.is_dead = dead
         return dead
 
+    # TODO: replace check_dead with new_check_dead
+    def new_check_dead(self, head, body):
+        dead = False
+        x, y = head
+        if not 0 <= x < self.cell_width or not 0 <= y < self.cell_height or head in body[:-1]:
+            dead = True
+        return dead
+
     def cut_tail(self):
         self.body.pop(0)
 
+    # TODO: make it accept next point instead of direction
     def grow(self):
         x, y = self.get_head()
         if self.direction == 'up':
@@ -116,10 +130,59 @@ class Snake(Item):
             self.eaten = False
             self.cut_tail()
 
+class BFS(Snake):
+    def __init__(self,snake,apple):
+        """
+        :param body:
+        :param apple:
+        """
+        super().__init__()
+        self.snake=snake
+        self.apple=apple
+
+    def run(self):
+        queue=deque([])
+        queue.append([self.snake.get_head()])
+        while queue:
+            path=queue.popleft()
+            node=path[-1]
+            # print(node)
+            # print(self.apple.location)
+
+            if node == self.apple.location:
+                first_node_x, first_node_y = path[0]
+                second_node_x, second_node_y = path[1]
+                if first_node_x - second_node_x == 1:
+                    direction = "left"
+                elif first_node_x - second_node_x == -1:
+                    direction = 'right'
+                elif first_node_y - second_node_y == 1:
+                    direction = 'up'
+                elif first_node_y - second_node_y == -1:
+                    direction = 'down'
+                else:
+                    direction = 'right'
+                #return path
+                return direction
+
+            # TODO: make BFS and snake returning location of next point, instead of direction
+            for diff in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                diff_x, diff_y = diff
+                node_x, node_y = node
+                new_node_x = node_x+diff_x
+                new_node_y = node_y+diff_y
+
+                if self.new_check_dead(head=(new_node_x,new_node_y), body=self.snake.body):
+                    continue
+                if  (new_node_x,new_node_y) in flattener(queue):
+                    continue
+                new_path = list(path)
+                new_path.append((new_node_x,new_node_y))
+                queue.append(new_path)
 
 @dataclass
 class SnakeGame(Item):
-    fps: int = 15
+    fps: int = 30
 
     def __init__(self):
         pygame.init()
@@ -148,25 +211,30 @@ class SnakeGame(Item):
 
         while True:  # main game loop
             count += 1
-            for event in pygame.event.get():  # event handling loop
-                if event.type == QUIT:
-                    self.terminate()
-
+            bfs = BFS(snake=snake,apple=apple)
+            snake.direction =bfs.run()
+            # TODO: if BFS has no result, it should wonder
+            # for event in pygame.event.get():  # event handling loop
+            #     if event.type == QUIT:
+            #         self.terminate()
+            #
                 # TODO: add Player class, which accepts snake and apple, cache the location and outputs the direction
-                elif event.type == KEYDOWN:
-                    if (event.key == K_LEFT or event.key == K_a) and snake.direction != 'right':
-                        snake.direction = 'left'
-                    elif (event.key == K_RIGHT or event.key == K_d) and snake.direction != 'left':
-                        snake.direction = 'right'
-                    elif (event.key == K_UP or event.key == K_w) and snake.direction != 'down':
-                        snake.direction = 'up'
-                    elif (event.key == K_DOWN or event.key == K_s) and snake.direction != 'up':
-                        snake.direction = 'down'
-                    elif event.key == K_ESCAPE:
-                        self.terminate()
+                # elif event.type == KEYDOWN:
+                #     if (event.key == K_LEFT or event.key == K_a) and snake.direction != 'right':
+                #         snake.direction = 'left'
+                #     elif (event.key == K_RIGHT or event.key == K_d) and snake.direction != 'left':
+                #         snake.direction = 'right'
+                #     elif (event.key == K_UP or event.key == K_w) and snake.direction != 'down':
+                #         snake.direction = 'up'
+                #     elif (event.key == K_DOWN or event.key == K_s) and snake.direction != 'up':
+                #         snake.direction = 'down'
+                #     elif event.key == K_ESCAPE:
+                #         self.terminate()
 
             # if count >= 10:
             #     break
+
+
 
             snake.move(apple=apple)
 
