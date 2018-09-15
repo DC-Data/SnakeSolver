@@ -46,13 +46,11 @@ def flattener(l):
 
 
 class Snake(Item):
-    def __init__(self, initial_length: int = 3, direction: str = 'right'):
+    def __init__(self, initial_length: int = 3):
         """
         :param initial_length: The initial length of the snake
-        :param direction: Snake's default direction
         """
         self.initial_length = initial_length
-        self.direction = direction
 
         # TODO: start from the middle instead
         if not 0 < initial_length < self.cell_width:
@@ -68,20 +66,11 @@ class Snake(Item):
     def get_head(self):
         return self.body[-1]
 
-    def cheak_dead(self):
+    def cheak_dead(self, head, body):
         """
         Check if the snake is dead, update the result in self.is_dead and return it as well
         :return: Boolean
         """
-        dead = False
-        x, y = self.get_head()
-        if not 0 <= x < self.cell_width or not 0 <= y < self.cell_height or self.get_head() in self.body[:-1]:
-            dead = True
-        self.is_dead = dead
-        return dead
-
-    # TODO: replace check_dead with new_check_dead
-    def new_check_dead(self, head, body):
         dead = False
         x, y = head
         if not 0 <= x < self.cell_width or not 0 <= y < self.cell_height or head in body[:-1]:
@@ -101,7 +90,7 @@ class Snake(Item):
         # make the move
         self.body.append(new_head)
 
-        if self.cheak_dead():
+        if self.cheak_dead(head=new_head, body=self.body):
             return
 
         # if the snake eats the apple, score adds 1
@@ -141,7 +130,7 @@ class BFS(Snake):
                 new_node_x = node_x + diff_x
                 new_node_y = node_y + diff_y
 
-                if self.new_check_dead(head=(new_node_x, new_node_y), body=self.snake.body):
+                if self.cheak_dead(head=(new_node_x, new_node_y), body=self.snake.body):
                     continue
                 if (new_node_x, new_node_y) in flattener(queue):
                     continue
