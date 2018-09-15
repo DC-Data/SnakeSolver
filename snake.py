@@ -116,7 +116,9 @@ class BFS(Snake):
     def run(self):
         queue = deque([])
         queue.append([self.snake.get_head()])
+        count = 0
         while queue:
+            count += 1
             path = queue.popleft()
             node = path[-1]
 
@@ -127,15 +129,13 @@ class BFS(Snake):
             for diff in ((1, 0), (-1, 0), (0, 1), (0, -1)):
                 diff_x, diff_y = diff
                 node_x, node_y = node
-                new_node_x = node_x + diff_x
-                new_node_y = node_y + diff_y
+                new_node = (node_x + diff_x, node_y + diff_y)
 
-                if self.cheak_dead(head=(new_node_x, new_node_y), body=self.snake.body):
+                if self.cheak_dead(head=new_node, body=self.snake.body) or new_node in flattener(queue):
                     continue
-                if (new_node_x, new_node_y) in flattener(queue):
-                    continue
+
                 new_path = list(path)
-                new_path.append((new_node_x, new_node_y))
+                new_path.append(new_node)
                 queue.append(new_path)
 
 
