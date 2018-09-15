@@ -91,32 +91,15 @@ class Snake(Item):
     def cut_tail(self):
         self.body.pop(0)
 
-    # TODO: make it accept next point instead of direction
-    def grow(self):
-        x, y = self.get_head()
-        if self.direction == 'up':
-            y -= 1
-        elif self.direction == 'down':
-            y += 1
-        elif self.direction == 'left':
-            x -= 1
-        elif self.direction == 'right':
-            x += 1
-        self.body.append((x, y))
-
-    def move(self, apple, direction=None):
+    def move(self, new_head, apple):
         """
         Given the location of apple, decide if the apple is eaten (same location as the snake's head)
+        :param new_head: tuple (new_head_x, new_head_y)
         :param apple: Apple instance
-        :param direction: Optional. If direction is None, use snake's default or previous direction.
         :return: Boolean. Whether the apple is eaten.
         """
-        # Pass in direction through parameter
-        if direction:
-            self.direction = direction
-
         # make the move
-        self.grow()
+        self.body.append(new_head)
 
         if self.cheak_dead():
             return
@@ -130,55 +113,42 @@ class Snake(Item):
             self.eaten = False
             self.cut_tail()
 
+
 class BFS(Snake):
-    def __init__(self,snake,apple):
+    def __init__(self, snake, apple):
         """
-        :param body:
-        :param apple:
+        :param snake: Snake instance
+        :param apple: Apple instance
         """
         super().__init__()
-        self.snake=snake
-        self.apple=apple
+        self.snake = snake
+        self.apple = apple
 
     def run(self):
-        queue=deque([])
+        queue = deque([])
         queue.append([self.snake.get_head()])
         while queue:
-            path=queue.popleft()
-            node=path[-1]
-            # print(node)
-            # print(self.apple.location)
+            path = queue.popleft()
+            node = path[-1]
 
+            # If it meats the apple, return the next point after head
             if node == self.apple.location:
-                first_node_x, first_node_y = path[0]
-                second_node_x, second_node_y = path[1]
-                if first_node_x - second_node_x == 1:
-                    direction = "left"
-                elif first_node_x - second_node_x == -1:
-                    direction = 'right'
-                elif first_node_y - second_node_y == 1:
-                    direction = 'up'
-                elif first_node_y - second_node_y == -1:
-                    direction = 'down'
-                else:
-                    direction = 'right'
-                #return path
-                return direction
+                return path[1]
 
-            # TODO: make BFS and snake returning location of next point, instead of direction
             for diff in ((1, 0), (-1, 0), (0, 1), (0, -1)):
                 diff_x, diff_y = diff
                 node_x, node_y = node
-                new_node_x = node_x+diff_x
-                new_node_y = node_y+diff_y
+                new_node_x = node_x + diff_x
+                new_node_y = node_y + diff_y
 
-                if self.new_check_dead(head=(new_node_x,new_node_y), body=self.snake.body):
+                if self.new_check_dead(head=(new_node_x, new_node_y), body=self.snake.body):
                     continue
-                if  (new_node_x,new_node_y) in flattener(queue):
+                if (new_node_x, new_node_y) in flattener(queue):
                     continue
                 new_path = list(path)
-                new_path.append((new_node_x,new_node_y))
+                new_path.append((new_node_x, new_node_y))
                 queue.append(new_path)
+
 
 @dataclass
 class SnakeGame(Item):
@@ -207,36 +177,14 @@ class SnakeGame(Item):
         apple = Apple()
         apple.refresh(snake=snake)
 
-        count = 0
+        while True:
+            for event in pygame.event.get():  # event handling loop
+                if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
+                    self.terminate()
 
-        while True:  # main game loop
-            count += 1
-            bfs = BFS(snake=snake,apple=apple)
-            snake.direction =bfs.run()
+            bfs = BFS(snake=snake, apple=apple)
             # TODO: if BFS has no result, it should wonder
-            # for event in pygame.event.get():  # event handling loop
-            #     if event.type == QUIT:
-            #         self.terminate()
-            #
-                # TODO: add Player class, which accepts snake and apple, cache the location and outputs the direction
-                # elif event.type == KEYDOWN:
-                #     if (event.key == K_LEFT or event.key == K_a) and snake.direction != 'right':
-                #         snake.direction = 'left'
-                #     elif (event.key == K_RIGHT or event.key == K_d) and snake.direction != 'left':
-                #         snake.direction = 'right'
-                #     elif (event.key == K_UP or event.key == K_w) and snake.direction != 'down':
-                #         snake.direction = 'up'
-                #     elif (event.key == K_DOWN or event.key == K_s) and snake.direction != 'up':
-                #         snake.direction = 'down'
-                #     elif event.key == K_ESCAPE:
-                #         self.terminate()
-
-            # if count >= 10:
-            #     break
-
-
-
-            snake.move(apple=apple)
+            snake.move(new_head=bfs.run(), apple=apple)
 
             if snake.is_dead:
                 break
