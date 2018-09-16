@@ -14,6 +14,7 @@ import operator
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
+GREEN = (0, 255, 0)
 DARKGRAY = (40, 40, 40)
 
 
@@ -52,10 +53,14 @@ class Snake(Base):
         # TODO: start from the middle instead
         if not 0 < initial_length < self.cell_width:
             raise ValueError(f"Initial_length should fall in (0, {self.cell_width})")
+
         start_x = random.randint(initial_length + 2, self.cell_width - (initial_length + 3))
         start_y = random.randint(initial_length + 2, self.cell_height - (initial_length + 3))
 
-        self.body = list(zip([start_x] * initial_length, range(start_y, start_y - initial_length, -1)))
+        start_body_x = [start_x] * initial_length
+        start_body_y = range(start_y, start_y - initial_length, -1)
+
+        self.body = deque(zip(start_body_x, start_body_y))
         self.score = 0
         self.is_dead = False
         self.eaten = False
@@ -63,18 +68,19 @@ class Snake(Base):
     def get_head(self):
         return self.body[-1]
 
-    def cheak_dead(self):
+    def cheak_dead(self, new_head):
         """
         Check if the snake is dead
         :return: Boolean
         """
-        x, y = self.get_head()
-        if not 0 <= x < self.cell_width or not 0 <= y < self.cell_height or (x, y) in self.body[:-1]:
+        x, y = new_head
+        if not 0 <= x < self.cell_width or not 0 <= y < self.cell_height or new_head in self.body:
+            self.is_dead = True
             return True
         return False
 
     def cut_tail(self):
-        self.body.pop(0)
+        self.body.popleft()
 
     def move(self, new_head: tuple, apple: Apple):
         """
@@ -83,11 +89,15 @@ class Snake(Base):
         :param apple: Apple instance
         :return: Boolean. Whether the apple is eaten.
         """
+        if new_head is None:
+            self.is_dead = True
+            return
+
+        if self.cheak_dead(new_head=new_head):
+            return
+
         # make the move
         self.body.append(new_head)
-
-        if self.cheak_dead():
-            return
 
         # if the snake eats the apple, score adds 1
         if self.get_head() == apple.location:
@@ -119,7 +129,7 @@ class Player(Base):
             yield tuple(map(operator.add, node, diff))
 
     @staticmethod
-    def is_node_in_queue(node, queue):
+    def is_node_in_queue(node: tuple, queue: iter):
         """
         Check if element is in a nested list
         """
@@ -145,10 +155,11 @@ class BFS(Player):
         super().__init__(snake=snake, apple=apple)
 
     def run(self):
-        queue = deque([[self.snake.get_head()]])
+        queue = deque([deque([self.snake.get_head()])])
 
         # TODO: if BFS has no way to go, return an elegant error
         while queue:
+            queue_backup = deque(queue)
             path = queue.popleft()
             future_head = path[-1]
 
@@ -159,11 +170,10 @@ class BFS(Player):
             for next_node in self._get_neighbors(future_head):
                 if (
                     self.is_invalid_move(node=next_node, snake=self.snake)
-                    or self.is_node_in_queue(node=next_node, queue=queue)
+                    or self.is_node_in_queue(node=next_node, queue=queue_backup)
                 ):
                     continue
-
-                new_path = list(path)
+                new_path = deque(path)
                 new_path.append(next_node)
                 queue.append(new_path)
 
@@ -198,10 +208,15 @@ class SnakeGame(Base):
             for event in pygame.event.get():  # event handling loop
                 if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                     self.terminate()
+            # start_time = time.time()
 
             bfs = BFS(snake=snake, apple=apple)
             # TODO: if BFS has no result, it should wonder
             snake.move(new_head=bfs.run(), apple=apple)
+
+            # end_time = time.time()
+
+            # print(f"This move takes {round(end_time-start_time, 4)}s")
 
             if snake.is_dead:
                 break
@@ -241,6 +256,12 @@ class SnakeGame(Base):
             y = snake_block_y * self.cell_size
             snake_block = pygame.Rect(x, y, self.cell_size, self.cell_size)
             pygame.draw.rect(self.display, WHITE, snake_block)
+
+        # Draw snake's head
+        x = snake_body[-1][0] * self.cell_size
+        y = snake_body[-1][1] * self.cell_size
+        snake_block = pygame.Rect(x, y, self.cell_size, self.cell_size)
+        pygame.draw.rect(self.display, GREEN, snake_block)
 
     def draw_apple(self, apple_location):
         apple_x, apple_y = apple_location
