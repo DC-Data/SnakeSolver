@@ -110,7 +110,7 @@ class Player(Base):
         self.apple = apple
 
     @staticmethod
-    def _get_neighbours(node):
+    def _get_neighbors(node):
         """
         fetch and yield the four neighbours of a node
         :param node: (node_x, node_y)
@@ -150,21 +150,21 @@ class BFS(Player):
         # TODO: if BFS has no way to go, return an elegant error
         while queue:
             path = queue.popleft()
-            node = path[-1]
+            future_head = path[-1]
 
             # If snake eats the apple, return the next move after snake's head
-            if node == self.apple.location:
+            if future_head == self.apple.location:
                 return path[1]
 
-            for new_node in self._get_neighbours(node):
+            for next_node in self._get_neighbors(future_head):
                 if (
-                    self.is_invalid_move(node=new_node, snake=self.snake)
-                    or self.is_node_in_queue(node=new_node, queue=queue)
+                    self.is_invalid_move(node=next_node, snake=self.snake)
+                    or self.is_node_in_queue(node=next_node, queue=queue)
                 ):
                     continue
 
                 new_path = list(path)
-                new_path.append(new_node)
+                new_path.append(next_node)
                 queue.append(new_path)
 
 
