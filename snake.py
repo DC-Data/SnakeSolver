@@ -64,14 +64,13 @@ class Snake(Item):
 
     def cheak_dead(self):
         """
-        Check if the snake is dead, update the result in self.is_dead and return it as well
+        Check if the snake is dead
         :return: Boolean
         """
-        dead = False
         x, y = self.get_head()
         if not 0 <= x < self.cell_width or not 0 <= y < self.cell_height or (x, y) in self.body[:-1]:
-            dead = True
-        return dead
+            return True
+        return False
 
     def cut_tail(self):
         self.body.pop(0)
@@ -120,7 +119,7 @@ class Player(Item):
             yield (node_x + diff_x, node_y + diff_y)
 
     @staticmethod
-    def flattener(l: list):
+    def flattener(l):
         return [item for sublist in l for item in sublist]
 
     def move_validation(self, node: tuple, snake: Snake):
@@ -128,11 +127,10 @@ class Player(Item):
         Similar to check_dead, this method checks if a given node is a valid move
         :return: Boolean
         """
-        dead = False
         x, y = node
-        if not 0 <= x < self.cell_width or not 0 <= y < self.cell_height or node in snake.body[:-1]:
-            dead = True
-        return dead
+        if not 0 <= x < self.cell_width or not 0 <= y < self.cell_height or node in snake.body:
+            return True
+        return False
 
 
 class BFS(Player):
@@ -152,7 +150,7 @@ class BFS(Player):
             path = queue.popleft()
             node = path[-1]
 
-            # If it meats the apple, return the next point after head
+            # If snake eats the apple, return the next move after snake's head
             if node == self.apple.location:
                 return path[1]
 
