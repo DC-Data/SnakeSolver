@@ -6,10 +6,11 @@ from pygame.locals import *
 import random
 import sys
 import time
-import operator
+from operator import add, sub
 from dataclasses import dataclass
 from itertools import product
 from collections import deque
+from typing import Tuple
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -25,6 +26,16 @@ class Base:
     cell_height: int = 16
     window_width = cell_size * cell_width
     window_height = cell_size * cell_height
+
+    @staticmethod
+    def node_add(node_a: Tuple[int, int], node_b: Tuple[int, int]):
+        result: Tuple[int, int] = tuple(map(add, node_a, node_b))
+        return result
+
+    @staticmethod
+    def node_sub(node_a: Tuple[int, int], node_b: Tuple[int, int]):
+        result: Tuple[int, int] = tuple(map(sub, node_a, node_b))
+        return result
 
 
 class Apple(Base):
@@ -51,7 +62,6 @@ class Snake(Base):
         """
         self.initial_length = initial_length
 
-        # TODO: start from the middle instead
         if not 0 < initial_length < self.cell_width:
             raise ValueError(f"Initial_length should fall in (0, {self.cell_width})")
 
@@ -65,6 +75,7 @@ class Snake(Base):
         self.score = 0
         self.is_dead = False
         self.eaten = False
+        self.last_direction = (-1, 0)
 
     def get_head(self):
         return self.body[-1]
@@ -97,6 +108,8 @@ class Snake(Base):
         if self.cheak_dead(new_head=new_head):
             return
 
+        self.last_direction = self.node_sub(new_head, self.get_head())
+
         # make the move
         self.body.append(new_head)
 
@@ -120,14 +133,13 @@ class Player(Base):
         self.snake = snake
         self.apple = apple
 
-    @staticmethod
-    def _get_neighbors(node):
+    def _get_neighbors(self, node):
         """
         fetch and yield the four neighbours of a node
         :param node: (node_x, node_y)
         """
-        for diff in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-            yield tuple(map(operator.add, node, diff))
+        for diff in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+            yield self.node_add(node, diff)
 
     @staticmethod
     def is_node_in_queue(node: tuple, queue: iter):
@@ -179,8 +191,38 @@ class BFS(Player):
             queue.popleft()
 
 
-class HamiltonianPath(Base):
-    pass
+class HamiltonianPath(Player):
+    def __init__(self, snake: Snake, apple: Apple):
+        """
+        :param snake: Snake instance
+        :param apple: Apple instance
+        """
+        super().__init__(snake=snake, apple=apple)
+
+
+class Human(Player):
+    def __init__(self, snake: Snake, apple: Apple):
+        """
+        :param snake: Snake instance
+        :param apple: Apple instance
+        """
+        super().__init__(snake=snake, apple=apple)
+
+    def run(self):
+        for event in pygame.event.get():  # event handling loop
+            if event.type == KEYDOWN:
+                if (event.key == K_LEFT or event.key == K_a) and self.snake.last_direction != (1, 0):
+                    diff = (-1, 0)
+                elif (event.key == K_RIGHT or event.key == K_d) and self.snake.last_direction != (-1, 0):
+                    diff = (1, 0)
+                elif (event.key == K_UP or event.key == K_w) and self.snake.last_direction != (0, 1):
+                    diff = (0, -1)
+                elif (event.key == K_DOWN or event.key == K_s) and self.snake.last_direction != (0, -1):
+                    diff = (0, 1)
+                else:
+                    break
+                return self.node_add(self.snake.get_head(), diff)
+        return self.node_add(self.snake.get_head(), self.snake.last_direction)
 
 
 @dataclass
@@ -209,17 +251,20 @@ class SnakeGame(Base):
         step_time = []
 
         while True:
+            # Human Player
+            # new_head = Human(snake=snake, apple=apple).run()
+
+            # AI Player
             for event in pygame.event.get():  # event handling loop
                 if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                     self.terminate()
+
             start_time = time.time()
-
-            bfs = BFS(snake=snake, apple=apple)
-            snake.move(new_head=bfs.run(), apple=apple)
-
+            new_head = BFS(snake=snake, apple=apple).run()
             end_time = time.time()
-
             step_time.append(end_time - start_time)
+
+            snake.move(new_head=new_head, apple=apple)
 
             if snake.is_dead:
                 break
