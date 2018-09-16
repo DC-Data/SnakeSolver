@@ -41,10 +41,6 @@ class Apple(Item):
         self.location = location
 
 
-def flattener(l):
-    return [item for sublist in l for item in sublist]
-
-
 class Snake(Item):
     def __init__(self, initial_length: int = 3):
         """
@@ -66,31 +62,31 @@ class Snake(Item):
     def get_head(self):
         return self.body[-1]
 
-    def cheak_dead(self, head, body):
+    def cheak_dead(self):
         """
         Check if the snake is dead, update the result in self.is_dead and return it as well
         :return: Boolean
         """
         dead = False
-        x, y = head
-        if not 0 <= x < self.cell_width or not 0 <= y < self.cell_height or head in body[:-1]:
+        x, y = self.get_head()
+        if not 0 <= x < self.cell_width or not 0 <= y < self.cell_height or (x, y) in self.body[:-1]:
             dead = True
         return dead
 
     def cut_tail(self):
         self.body.pop(0)
 
-    def move(self, new_head, apple):
+    def move(self, new_head: tuple, apple: Apple):
         """
         Given the location of apple, decide if the apple is eaten (same location as the snake's head)
-        :param new_head: tuple (new_head_x, new_head_y)
+        :param new_head: (new_head_x, new_head_y)
         :param apple: Apple instance
         :return: Boolean. Whether the apple is eaten.
         """
         # make the move
         self.body.append(new_head)
 
-        if self.cheak_dead(head=new_head, body=self.body):
+        if self.cheak_dead():
             return
 
         # if the snake eats the apple, score adds 1
@@ -103,8 +99,8 @@ class Snake(Item):
             self.cut_tail()
 
 
-class BFS(Snake):
-    def __init__(self, snake, apple):
+class Player(Item):
+    def __init__(self, snake: Snake, apple: Apple):
         """
         :param snake: Snake instance
         :param apple: Apple instance
@@ -113,12 +109,46 @@ class BFS(Snake):
         self.snake = snake
         self.apple = apple
 
+    @staticmethod
+    def _get_neighbours(node):
+        """
+        fetch and yield the four neighbours of a node
+        :param node: (node_x, node_y)
+        """
+        node_x, node_y = node
+        for diff_x, diff_y in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            yield (node_x + diff_x, node_y + diff_y)
+
+    @staticmethod
+    def flattener(l: list):
+        return [item for sublist in l for item in sublist]
+
+    def move_validation(self, node: tuple, snake: Snake):
+        """
+        Similar to check_dead, this method checks if a given node is a valid move
+        :return: Boolean
+        """
+        dead = False
+        x, y = node
+        if not 0 <= x < self.cell_width or not 0 <= y < self.cell_height or node in snake.body[:-1]:
+            dead = True
+        return dead
+
+
+class BFS(Player):
+    def __init__(self, snake: Snake, apple: Apple):
+        """
+        :param snake: Snake instance
+        :param apple: Apple instance
+        """
+        super().__init__(snake=snake, apple=apple)
+
     def run(self):
         queue = deque([])
         queue.append([self.snake.get_head()])
-        count = 0
+
+        # TODO: if BFS has no way to go, return an elegant error
         while queue:
-            count += 1
             path = queue.popleft()
             node = path[-1]
 
@@ -126,12 +156,8 @@ class BFS(Snake):
             if node == self.apple.location:
                 return path[1]
 
-            for diff in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                diff_x, diff_y = diff
-                node_x, node_y = node
-                new_node = (node_x + diff_x, node_y + diff_y)
-
-                if self.cheak_dead(head=new_node, body=self.snake.body) or new_node in flattener(queue):
+            for new_node in self._get_neighbours(node):
+                if self.move_validation(node=new_node, snake=self.snake) or new_node in self.flattener(queue):
                     continue
 
                 new_path = list(path)
@@ -141,7 +167,7 @@ class BFS(Snake):
 
 @dataclass
 class SnakeGame(Item):
-    fps: int = 30
+    fps: int = 60
 
     def __init__(self):
         pygame.init()
