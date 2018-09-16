@@ -157,9 +157,8 @@ class BFS(Player):
     def run(self):
         queue = deque([deque([self.snake.get_head()])])
 
-        # TODO: if BFS has no way to go, return an elegant error
         while queue:
-            queue_backup = deque(queue)
+            full_queue = deque(queue)
             path = queue.popleft()
             future_head = path[-1]
 
@@ -170,7 +169,7 @@ class BFS(Player):
             for next_node in self._get_neighbors(future_head):
                 if (
                     self.is_invalid_move(node=next_node, snake=self.snake)
-                    or self.is_node_in_queue(node=next_node, queue=queue_backup)
+                    or self.is_node_in_queue(node=next_node, queue=full_queue)
                 ):
                     continue
                 new_path = deque(path)
@@ -180,7 +179,7 @@ class BFS(Player):
 
 @dataclass
 class SnakeGame(Base):
-    fps: int = 60
+    fps: int = 90
 
     def __init__(self):
         pygame.init()
@@ -204,19 +203,21 @@ class SnakeGame(Base):
         apple = Apple()
         apple.refresh(snake=snake)
 
+        step_time = []
+
         while True:
             for event in pygame.event.get():  # event handling loop
                 if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                     self.terminate()
-            # start_time = time.time()
+            start_time = time.time()
 
             bfs = BFS(snake=snake, apple=apple)
             # TODO: if BFS has no result, it should wonder
             snake.move(new_head=bfs.run(), apple=apple)
 
-            # end_time = time.time()
+            end_time = time.time()
 
-            # print(f"This move takes {round(end_time-start_time, 4)}s")
+            step_time.append(end_time-start_time)
 
             if snake.is_dead:
                 break
@@ -231,7 +232,8 @@ class SnakeGame(Base):
             pygame.display.update()
             self.clock.tick(self.fps)
 
-        print(snake.score)
+        print(f"Score: {snake.score}")
+        print(f"Mean step time: {round(sum(step_time)/len(step_time), 4)}")
 
     @staticmethod
     def terminate():
