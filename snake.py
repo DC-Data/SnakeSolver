@@ -1,15 +1,15 @@
 #!/usr/bin/python
 # -*-coding: utf-8 -*-
 
-import itertools
 import pygame
+from pygame.locals import *
 import random
 import sys
 import time
-from dataclasses import dataclass
-from pygame.locals import *
-from collections import deque
 import operator
+from dataclasses import dataclass
+from itertools import product
+from collections import deque
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -20,12 +20,11 @@ DARKGRAY = (40, 40, 40)
 
 @dataclass
 class Base:
-    window_width: int = 320
-    window_height: int = 320
     cell_size: int = 20
-
-    cell_width = int(window_width / cell_size)
-    cell_height = int(window_height / cell_size)
+    cell_width: int = 16
+    cell_height: int = 16
+    window_width = cell_size * cell_width
+    window_height = cell_size * cell_height
 
 
 class Apple(Base):
@@ -33,13 +32,15 @@ class Apple(Base):
         self.location = None
 
     def refresh(self, snake):
-        available_position = (
-            set(itertools.product(range(self.cell_width - 1), range(self.cell_height - 1))) - set(snake.body)
-        )
-        try:
-            location = random.sample(available_position, 1)[0]
-        except ValueError:
-            location = None
+        """
+        Generate a new apple
+        """
+        available_positions = set(product(range(self.cell_width - 1), range(self.cell_height - 1))) - set(snake.body)
+        if available_positions:
+            location = random.sample(available_positions, 1)[0]
+        # If there's no available node for new apple, it reaches the perfect solution. Don't draw the apple then.
+        else:
+            location = (-1, -1)
         self.location = location
 
 
@@ -54,8 +55,8 @@ class Snake(Base):
         if not 0 < initial_length < self.cell_width:
             raise ValueError(f"Initial_length should fall in (0, {self.cell_width})")
 
-        start_x = random.randint(initial_length + 2, self.cell_width - (initial_length + 3))
-        start_y = random.randint(initial_length + 2, self.cell_height - (initial_length + 3))
+        start_x = self.cell_width // 2
+        start_y = self.cell_height // 2
 
         start_body_x = [start_x] * initial_length
         start_body_y = range(start_y, start_y - initial_length, -1)
@@ -158,8 +159,7 @@ class BFS(Player):
         queue = deque([deque([self.snake.get_head()])])
 
         while queue:
-            full_queue = deque(queue)
-            path = queue.popleft()
+            path = queue[0]
             future_head = path[-1]
 
             # If snake eats the apple, return the next move after snake's head
@@ -169,12 +169,18 @@ class BFS(Player):
             for next_node in self._get_neighbors(future_head):
                 if (
                     self.is_invalid_move(node=next_node, snake=self.snake)
-                    or self.is_node_in_queue(node=next_node, queue=full_queue)
+                    or self.is_node_in_queue(node=next_node, queue=queue)
                 ):
                     continue
                 new_path = deque(path)
                 new_path.append(next_node)
                 queue.append(new_path)
+
+            queue.popleft()
+
+
+class HamiltonianPath(Base):
+    pass
 
 
 @dataclass
@@ -187,9 +193,6 @@ class SnakeGame(Base):
         self.display = pygame.display.set_mode((self.window_width, self.window_height))
         self.basic_font = pygame.font.Font('freesansbold.ttf', 18)
         pygame.display.set_caption('Perfect Snake')
-
-        self.cell_width = int(self.window_width / self.cell_size)
-        self.cell_height = int(self.window_height / self.cell_size)
 
     def launch(self):
         while True:
@@ -212,12 +215,11 @@ class SnakeGame(Base):
             start_time = time.time()
 
             bfs = BFS(snake=snake, apple=apple)
-            # TODO: if BFS has no result, it should wonder
             snake.move(new_head=bfs.run(), apple=apple)
 
             end_time = time.time()
 
-            step_time.append(end_time-start_time)
+            step_time.append(end_time - start_time)
 
             if snake.is_dead:
                 break
@@ -256,13 +258,13 @@ class SnakeGame(Base):
         for snake_block_x, snake_block_y in snake_body:
             x = snake_block_x * self.cell_size
             y = snake_block_y * self.cell_size
-            snake_block = pygame.Rect(x, y, self.cell_size, self.cell_size)
+            snake_block = pygame.Rect(x, y, self.cell_size - 1, self.cell_size - 1)
             pygame.draw.rect(self.display, WHITE, snake_block)
 
         # Draw snake's head
         x = snake_body[-1][0] * self.cell_size
         y = snake_body[-1][1] * self.cell_size
-        snake_block = pygame.Rect(x, y, self.cell_size, self.cell_size)
+        snake_block = pygame.Rect(x, y, self.cell_size - 1, self.cell_size - 1)
         pygame.draw.rect(self.display, GREEN, snake_block)
 
     def draw_apple(self, apple_location):
