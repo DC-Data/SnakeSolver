@@ -9,6 +9,7 @@ import time
 from dataclasses import dataclass
 from pygame.locals import *
 from collections import deque
+import operator
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -17,7 +18,7 @@ DARKGRAY = (40, 40, 40)
 
 
 @dataclass
-class Item:
+class Base:
     window_width: int = 320
     window_height: int = 320
     cell_size: int = 20
@@ -26,7 +27,7 @@ class Item:
     cell_height = int(window_height / cell_size)
 
 
-class Apple(Item):
+class Apple(Base):
     def __init__(self):
         self.location = None
 
@@ -41,7 +42,7 @@ class Apple(Item):
         self.location = location
 
 
-class Snake(Item):
+class Snake(Base):
     def __init__(self, initial_length: int = 3):
         """
         :param initial_length: The initial length of the snake
@@ -98,7 +99,7 @@ class Snake(Item):
             self.cut_tail()
 
 
-class Player(Item):
+class Player(Base):
     def __init__(self, snake: Snake, apple: Apple):
         """
         :param snake: Snake instance
@@ -114,15 +115,17 @@ class Player(Item):
         fetch and yield the four neighbours of a node
         :param node: (node_x, node_y)
         """
-        node_x, node_y = node
-        for diff_x, diff_y in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-            yield (node_x + diff_x, node_y + diff_y)
+        for diff in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            yield tuple(map(operator.add, node, diff))
 
     @staticmethod
-    def flattener(l):
-        return [item for sublist in l for item in sublist]
+    def is_node_in_queue(node, queue):
+        """
+        Check if element is in a nested list
+        """
+        return any(node in sublist for sublist in queue)
 
-    def move_validation(self, node: tuple, snake: Snake):
+    def is_invalid_move(self, node: tuple, snake: Snake):
         """
         Similar to check_dead, this method checks if a given node is a valid move
         :return: Boolean
@@ -142,8 +145,7 @@ class BFS(Player):
         super().__init__(snake=snake, apple=apple)
 
     def run(self):
-        queue = deque([])
-        queue.append([self.snake.get_head()])
+        queue = deque([[self.snake.get_head()]])
 
         # TODO: if BFS has no way to go, return an elegant error
         while queue:
@@ -155,7 +157,10 @@ class BFS(Player):
                 return path[1]
 
             for new_node in self._get_neighbours(node):
-                if self.move_validation(node=new_node, snake=self.snake) or new_node in self.flattener(queue):
+                if (
+                    self.is_invalid_move(node=new_node, snake=self.snake)
+                    or self.is_node_in_queue(node=new_node, queue=queue)
+                ):
                     continue
 
                 new_path = list(path)
@@ -164,7 +169,7 @@ class BFS(Player):
 
 
 @dataclass
-class SnakeGame(Item):
+class SnakeGame(Base):
     fps: int = 60
 
     def __init__(self):
@@ -182,7 +187,6 @@ class SnakeGame(Item):
             self.game()
             # self.showGameOverScreen()
             self.pause_game()
-            print('loop')
 
     def game(self):
         snake = Snake()
