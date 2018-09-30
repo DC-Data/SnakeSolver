@@ -56,28 +56,33 @@ class Apple(Base):
 
 
 class Snake(Base):
-    def __init__(self, initial_length: int = 3):
+    def __init__(self, initial_length: int = 3, body: list=None):
         """
         :param initial_length: The initial length of the snake
+        :param body: Optional. Specifying an initial snake body
         """
         self.initial_length = initial_length
-
-        if not 0 < initial_length < self.cell_width:
-            raise ValueError(f"Initial_length should fall in (0, {self.cell_width})")
-
-        start_x = self.cell_width // 2
-        start_y = self.cell_height // 2
-
-        start_body_x = [start_x] * initial_length
-        start_body_y = range(start_y, start_y - initial_length, -1)
-
-        self.body = deque(zip(start_body_x, start_body_y))
         self.score = 0
         self.is_dead = False
         self.eaten = False
 
         # last_direction is only used for human player, giving it a default direction when game starts
         self.last_direction = (-1, 0)
+
+        if body:
+            self.body = body
+        else:
+
+            if not 0 < initial_length < self.cell_width:
+                raise ValueError(f"Initial_length should fall in (0, {self.cell_width})")
+
+            start_x = self.cell_width // 2
+            start_y = self.cell_height // 2
+
+            start_body_x = [start_x] * initial_length
+            start_body_y = range(start_y, start_y - initial_length, -1)
+
+            self.body = list(zip(start_body_x, start_body_y))
 
     def get_head(self):
         return self.body[-1]
@@ -94,7 +99,7 @@ class Snake(Base):
         return False
 
     def cut_tail(self):
-        self.body.popleft()
+        self.body.pop(0)
 
     def move(self, new_head: tuple, apple: Apple):
         """
@@ -173,7 +178,7 @@ class BFS(Player):
         """
         Run BFS searching and return the full path of best way to apple from BFS searching
         """
-        queue = deque([deque([self.snake.get_head()])])
+        queue = [[self.snake.get_head()]]
 
         while queue:
             path = queue[0]
@@ -189,11 +194,11 @@ class BFS(Player):
                     or self.is_node_in_queue(node=next_node, queue=queue)
                 ):
                     continue
-                new_path = deque(path)
+                new_path = list(path)
                 new_path.append(next_node)
                 queue.append(new_path)
 
-            queue.popleft()
+            queue.pop(0)
 
     def next_node(self):
         """
@@ -300,7 +305,9 @@ class SnakeGame(Base):
             start_time = time.time()
             new_head = BFS(snake=snake, apple=apple).next_node()
             end_time = time.time()
-            step_time.append(end_time - start_time)
+            move_time = end_time - start_time
+            # print(move_time)
+            step_time.append(move_time)
 
             snake.move(new_head=new_head, apple=apple)
 
