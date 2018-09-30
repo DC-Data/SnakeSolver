@@ -178,7 +178,7 @@ class BFS(Player):
 
             # If snake eats the apple, return the next move after snake's head
             if future_head == self.apple.location:
-                return path[1]
+                return path
 
             for next_node in self._get_neighbors(future_head):
                 if (
@@ -191,6 +191,10 @@ class BFS(Player):
                 queue.append(new_path)
 
             queue.popleft()
+
+    def next_node(self):
+        path = self.run()
+        return path[1]
 
 
 class HamiltonianPath(Player):
@@ -263,7 +267,7 @@ class SnakeGame(Base):
                     self.terminate()
 
             start_time = time.time()
-            new_head = BFS(snake=snake, apple=apple).run()
+            new_head = BFS(snake=snake, apple=apple).next_node()
             end_time = time.time()
             step_time.append(end_time - start_time)
 
