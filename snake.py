@@ -71,7 +71,7 @@ class Snake(Base):
         start_body_x = [start_x] * initial_length
         start_body_y = range(start_y, start_y - initial_length, -1)
 
-        self.body = deque(zip(start_body_x, start_body_y))
+        self.body = list(zip(start_body_x, start_body_y))
         self.score = 0
         self.is_dead = False
         self.eaten = False
@@ -94,7 +94,7 @@ class Snake(Base):
         return False
 
     def cut_tail(self):
-        self.body.popleft()
+        self.body.pop(0)
 
     def move(self, new_head: tuple, apple: Apple):
         """
@@ -173,7 +173,7 @@ class BFS(Player):
         """
         Run BFS searching and return the full path of best way to apple from BFS searching
         """
-        queue = deque([deque([self.snake.get_head()])])
+        queue = [[self.snake.get_head()]]
 
         while queue:
             path = queue[0]
@@ -189,11 +189,11 @@ class BFS(Player):
                     or self.is_node_in_queue(node=next_node, queue=queue)
                 ):
                     continue
-                new_path = deque(path)
+                new_path = list(path)
                 new_path.append(next_node)
                 queue.append(new_path)
 
-            queue.popleft()
+            queue.pop(0)
 
     def next_node(self):
         """
@@ -275,7 +275,9 @@ class SnakeGame(Base):
             start_time = time.time()
             new_head = BFS(snake=snake, apple=apple).next_node()
             end_time = time.time()
-            step_time.append(end_time - start_time)
+            move_time = end_time - start_time
+            # print(move_time)
+            step_time.append(move_time)
 
             snake.move(new_head=new_head, apple=apple)
 
