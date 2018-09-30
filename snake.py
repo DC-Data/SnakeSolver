@@ -192,6 +192,13 @@ class BFS(Player):
 
             queue.popleft()
 
+class LongestPath(Player):
+    def __init__(self, snake: Snake, apple: Apple):
+        """
+        :param snake: Snake instance
+        :param apple: Apple instance
+        """
+        super().__init__(snake=snake, apple=apple)
 
 class HamiltonianPath(Player):
     def __init__(self, snake: Snake, apple: Apple):
