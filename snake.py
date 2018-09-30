@@ -170,6 +170,9 @@ class BFS(Player):
         super().__init__(snake=snake, apple=apple)
 
     def run(self):
+        """
+        Run BFS searching and return the full path of best way to apple from BFS searching
+        """
         queue = deque([deque([self.snake.get_head()])])
 
         while queue:
@@ -193,6 +196,9 @@ class BFS(Player):
             queue.popleft()
 
     def next_node(self):
+        """
+        Run the BFS searching and return the next move in this path
+        """
         path = self.run()
         return path[1]
 
