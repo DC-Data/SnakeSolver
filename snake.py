@@ -170,6 +170,9 @@ class BFS(Player):
         super().__init__(snake=snake, apple=apple)
 
     def run(self):
+        """
+        Run BFS searching and return the full path of best way to apple from BFS searching
+        """
         queue = deque([deque([self.snake.get_head()])])
 
         while queue:
@@ -178,7 +181,7 @@ class BFS(Player):
 
             # If snake eats the apple, return the next move after snake's head
             if future_head == self.apple.location:
-                return path[1]
+                return path
 
             for next_node in self._get_neighbors(future_head):
                 if (
@@ -192,13 +195,12 @@ class BFS(Player):
 
             queue.popleft()
 
-class LongestPath(Player):
-    def __init__(self, snake: Snake, apple: Apple):
+    def next_node(self):
         """
-        :param snake: Snake instance
-        :param apple: Apple instance
+        Run the BFS searching and return the next move in this path
         """
-        super().__init__(snake=snake, apple=apple)
+        path = self.run()
+        return path[1]
 
 class HamiltonianPath(Player):
     def __init__(self, snake: Snake, apple: Apple):
@@ -207,6 +209,32 @@ class HamiltonianPath(Player):
         :param apple: Apple instance
         """
         super().__init__(snake=snake, apple=apple)
+
+class LongestPath(Player):
+    def __init__(self, snake: Snake, apple: Apple):
+        """
+        :param snake: Snake instance
+        :param apple: Apple instance
+        """
+        super().__init__(snake=snake, apple=apple)
+
+    def run(self):
+        shortestpath = BFS(snake = self.snake, apple= self.apple ).run()
+        i=0
+        while True:
+            direction =self.node_sub(shortestpath[i],shortestpath[i+1])
+            if direction == (1,0):
+                if shortestpath(i)+(0,1) in shortestpath or shortestpath(i+1)+(0,1) in shortestpath or self.(shortestpath(i)+(0,1)) or self.(shortestpath(i+1)+(0,1)):
+                    i=i+1;
+                else:
+                    shortestpath.insert(i+1,shortestpath[i+1]+(0,1))
+                    shortestpath.insert(i+2,shortestpath[i+2]+(1,0))
+            else if direction == (-1,0):
+                    if shortestpath(i)+(0,1) in shortestpath or shortestpath(i+1)+(0,1) in shortestpath or self.(shortestpath(i)+(0,1)) or self.(shortestpath(i+1)+(0,1)):
+                        i=i+1;
+                    else:
+                    shortestpath.insert(i+1,shortestpath[i+1]+(0,1))
+                    shortestpath.insert(i+2,shortestpath[i+2]+(-1,0))
 
 
 class Human(Player):
@@ -270,7 +298,7 @@ class SnakeGame(Base):
                     self.terminate()
 
             start_time = time.time()
-            new_head = BFS(snake=snake, apple=apple).run()
+            new_head = BFS(snake=snake, apple=apple).next_node()
             end_time = time.time()
             step_time.append(end_time - start_time)
 
