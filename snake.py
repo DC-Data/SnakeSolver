@@ -56,28 +56,33 @@ class Apple(Base):
 
 
 class Snake(Base):
-    def __init__(self, initial_length: int = 3):
+    def __init__(self, initial_length: int = 3, body: list=None):
         """
         :param initial_length: The initial length of the snake
+        :param body: Optional. Specifying an initial snake body
         """
         self.initial_length = initial_length
-
-        if not 0 < initial_length < self.cell_width:
-            raise ValueError(f"Initial_length should fall in (0, {self.cell_width})")
-
-        start_x = self.cell_width // 2
-        start_y = self.cell_height // 2
-
-        start_body_x = [start_x] * initial_length
-        start_body_y = range(start_y, start_y - initial_length, -1)
-
-        self.body = list(zip(start_body_x, start_body_y))
         self.score = 0
         self.is_dead = False
         self.eaten = False
 
         # last_direction is only used for human player, giving it a default direction when game starts
         self.last_direction = (-1, 0)
+
+        if body:
+            self.body = body
+        else:
+
+            if not 0 < initial_length < self.cell_width:
+                raise ValueError(f"Initial_length should fall in (0, {self.cell_width})")
+
+            start_x = self.cell_width // 2
+            start_y = self.cell_height // 2
+
+            start_body_x = [start_x] * initial_length
+            start_body_y = range(start_y, start_y - initial_length, -1)
+
+            self.body = list(zip(start_body_x, start_body_y))
 
     def get_head(self):
         return self.body[-1]
