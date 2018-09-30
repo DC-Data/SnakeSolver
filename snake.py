@@ -266,31 +266,7 @@ class LongestPath(Player):
                 else:
                     shortestpath.insert(i + 1, self.node_add(shortestpath[i + 1], (1, 0)))
                     shortestpath.insert(i + 1, self.node_add(shortestpath[i + 1], (0, -1)))
-        return shortestpath
-
-
-# def singleton(cls, *args, **kw):
-#     instances = {}
-#
-#     def _singleton():
-#         if cls not in instances:
-#             instances[cls] = cls(*args, **kw)
-#         return instances[cls]
-#
-#     return _singleton
-#
-#
-# @singleton
-# class StepLongestPath(Player):
-#     def __init__(self, **kwargs):
-#         super().__init__(**kwargs)
-#         self.path = LongestPath(**kwargs).run()
-#
-#     def get_next_move(self):
-#         try:
-#             self.path.pop(0)
-#         except IndexError:
-#             self.path = LongestPath(self.snake, self.apple).run()
+        return shortestpath[1:]
 
 
 class Human(Player):
@@ -345,9 +321,6 @@ class SnakeGame(Base):
         step_time = []
 
         longgest_path = LongestPath(snake=snake, apple=apple).run()
-        longgest_path.pop(0)
-        print(snake.body)
-        print(longgest_path)
 
         while True:
             # Human Player
@@ -368,7 +341,6 @@ class SnakeGame(Base):
                 new_head = longgest_path.pop(0)
             except IndexError:
                 longgest_path = LongestPath(snake=snake, apple=apple).run()
-                longgest_path.pop(0)
                 new_head = longgest_path.pop(0)
 
             end_time = time.time()
