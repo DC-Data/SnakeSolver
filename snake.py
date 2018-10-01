@@ -38,6 +38,10 @@ class Base:
         result: Tuple[int, int] = tuple(map(sub, node_a, node_b))
         return result
 
+    @staticmethod
+    def mean(l):
+        return round(sum(l) / len(l), 4)
+
 
 class Apple(Base):
     def __init__(self, **kwargs):
@@ -49,11 +53,10 @@ class Apple(Base):
         Generate a new apple
         """
         available_positions = set(product(range(self.cell_width - 1), range(self.cell_height - 1))) - set(snake.body)
-        if available_positions:
-            location = random.sample(available_positions, 1)[0]
+
         # If there's no available node for new apple, it reaches the perfect solution. Don't draw the apple then.
-        else:
-            location = (-1, -1)
+        location = random.sample(available_positions, 1)[0] if available_positions else (-1, -1)
+
         self.location = location
 
 
@@ -75,7 +78,6 @@ class Snake(Base):
         if body:
             self.body = body
         else:
-
             if not 0 < initial_length < self.cell_width:
                 raise ValueError(f"Initial_length should fall in (0, {self.cell_width})")
 
@@ -362,7 +364,7 @@ class SnakeGame(Base):
             self.clock.tick(self.fps)
 
         print(f"Score: {snake.score}")
-        print(f"Mean step time: {round(sum(step_time)/len(step_time), 4)}")
+        print(f"Mean step time: {self.mean(step_time)}")
 
     @staticmethod
     def terminate():
