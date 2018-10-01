@@ -1,16 +1,17 @@
 #!/usr/bin/python
 # -*-coding: utf-8 -*-
 
-import pygame
-from pygame.locals import *
+import contextlib
 import random
 import sys
 import time
 from operator import add, sub
 from dataclasses import dataclass
 from itertools import product
-from collections import deque
 from typing import Tuple
+with contextlib.redirect_stdout(None):
+    import pygame
+    from pygame.locals import *
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -39,7 +40,8 @@ class Base:
 
 
 class Apple(Base):
-    def __init__(self):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.location = None
 
     def refresh(self, snake):
@@ -56,11 +58,12 @@ class Apple(Base):
 
 
 class Snake(Base):
-    def __init__(self, initial_length: int = 3, body: list = None):
+    def __init__(self, initial_length: int = 3, body: list = None, **kwargs):
         """
         :param initial_length: The initial length of the snake
         :param body: Optional. Specifying an initial snake body
         """
+        super().__init__(**kwargs)
         self.initial_length = initial_length
         self.score = 0
         self.is_dead = False
@@ -131,12 +134,12 @@ class Snake(Base):
 
 
 class Player(Base):
-    def __init__(self, snake: Snake, apple: Apple):
+    def __init__(self, snake: Snake, apple: Apple, **kwargs):
         """
         :param snake: Snake instance
         :param apple: Apple instance
         """
-        super().__init__()
+        super().__init__(**kwargs)
         self.snake = snake
         self.apple = apple
 
@@ -167,12 +170,12 @@ class Player(Base):
 
 
 class BFS(Player):
-    def __init__(self, snake: Snake, apple: Apple):
+    def __init__(self, snake: Snake, apple: Apple, **kwargs):
         """
         :param snake: Snake instance
         :param apple: Apple instance
         """
-        super().__init__(snake=snake, apple=apple)
+        super().__init__(snake=snake, apple=apple, **kwargs)
 
     def run_bfs(self):
         """
@@ -208,26 +211,18 @@ class BFS(Player):
         return path[1]
 
 
-class HamiltonianPath(Player):
-    def __init__(self, snake: Snake, apple: Apple):
-        """
-        :param snake: Snake instance
-        :param apple: Apple instance
-        """
-        super().__init__(snake=snake, apple=apple)
-
-
 class LongestPath(BFS):
     """
     Given shortest path, change it to the longest path
     """
 
-    def __init__(self, snake: Snake, apple: Apple):
+    def __init__(self, snake: Snake, apple: Apple, **kwargs):
         """
         :param snake: Snake instance
         :param apple: Apple instance
         """
-        super().__init__(snake=snake, apple=apple)
+        super().__init__(snake=snake, apple=apple, **kwargs)
+        self.kwargs = kwargs
 
     def run_longest(self):
         """
@@ -245,7 +240,7 @@ class LongestPath(BFS):
                 break
 
             # Build a dummy snake with body and longest path for checking if node replacement is valid
-            snake_path = Snake(body=self.snake.body + path[1:])
+            snake_path = Snake(body=self.snake.body + path[1:], **self.kwargs)
 
             # up -> left, up, right
             # down -> right, down, left
@@ -271,12 +266,12 @@ class LongestPath(BFS):
 
 
 class Human(Player):
-    def __init__(self, snake: Snake, apple: Apple):
+    def __init__(self, snake: Snake, apple: Apple, **kwargs):
         """
         :param snake: Snake instance
         :param apple: Apple instance
         """
-        super().__init__(snake=snake, apple=apple)
+        super().__init__(snake=snake, apple=apple, **kwargs)
 
     def run(self):
         for event in pygame.event.get():  # event handling loop
@@ -300,7 +295,10 @@ class Human(Player):
 class SnakeGame(Base):
     fps: int = 90
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.kwargs = kwargs
+
         pygame.init()
         self.clock = pygame.time.Clock()
         self.display = pygame.display.set_mode((self.window_width, self.window_height))
@@ -314,9 +312,9 @@ class SnakeGame(Base):
             self.pause_game()
 
     def game(self):
-        snake = Snake()
+        snake = Snake(**self.kwargs)
 
-        apple = Apple()
+        apple = Apple(**self.kwargs)
         apple.refresh(snake=snake)
 
         step_time = []
@@ -325,7 +323,7 @@ class SnakeGame(Base):
 
         while True:
             # Human Player
-            # new_head = Human(snake=snake, apple=apple).run()
+            # new_head = Human(snake=snake, apple=apple, **self.kwargs).run()
 
             # AI Player
             for event in pygame.event.get():  # event handling loop
@@ -335,12 +333,12 @@ class SnakeGame(Base):
             start_time = time.time()
 
             # BFS Solver
-            # new_head = BFS(snake=snake, apple=apple).next_node()
+            # new_head = BFS(snake=snake, apple=apple, **self.kwargs).next_node()
 
             # Longest Path Solver
             # this solver is calculated per apple, not per move
             if not longgest_path_cache:
-                longgest_path_cache = LongestPath(snake=snake, apple=apple).run_longest()
+                longgest_path_cache = LongestPath(snake=snake, apple=apple, **self.kwargs).run_longest()
             new_head = longgest_path_cache.pop(0)
 
             end_time = time.time()
