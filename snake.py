@@ -87,13 +87,13 @@ class Snake(Base):
     def get_head(self):
         return self.body[-1]
 
-    def cheak_dead(self, new_head):
+    def dead_checking(self, head):
         """
         Check if the snake is dead
         :return: Boolean
         """
-        x, y = new_head
-        if not 0 <= x < self.cell_width or not 0 <= y < self.cell_height or new_head in self.body:
+        x, y = head
+        if not 0 <= x < self.cell_width or not 0 <= y < self.cell_height or head in self.body:
             self.is_dead = True
             return True
         return False
@@ -112,7 +112,7 @@ class Snake(Base):
             self.is_dead = True
             return
 
-        if self.cheak_dead(new_head=new_head):
+        if self.dead_checking(head=new_head):
             return
 
         self.last_direction = self.node_sub(new_head, self.get_head())
@@ -157,7 +157,7 @@ class Player(Base):
 
     def is_invalid_move(self, node: tuple, snake: Snake):
         """
-        Similar to check_dead, this method checks if a given node is a valid move
+        Similar to dead_checking, this method checks if a given node is a valid move
         :return: Boolean
         """
         x, y = node
@@ -221,6 +221,7 @@ class LongestPath(BFS):
     """
     Given shortest path, change it to the longest path
     """
+
     def __init__(self, snake: Snake, apple: Apple):
         """
         :param snake: Snake instance
@@ -234,15 +235,17 @@ class LongestPath(BFS):
         For example, for snake moving one step left, check if moving up, left, and down is valid. If yes, replace the
         move with equivalent longer move. Start this over until no move can be replaced.
         """
-        shortestpath = self.run_bfs()
+        path = self.run_bfs()
 
         i = 0
         while True:
             try:
-                direction = self.node_sub(shortestpath[i], shortestpath[i + 1])
+                direction = self.node_sub(path[i], path[i + 1])
             except IndexError:
                 break
-            snake_path = Snake(body=self.snake.body + shortestpath[1:])
+
+            # Build a dummy snake with body and longest path for checking if future move is replacable
+            snake_path = Snake(body=self.snake.body + path[1:])
 
             # up -> left, up, right
             # down -> right, down, left
@@ -252,16 +255,19 @@ class LongestPath(BFS):
                 if direction == neibhours:
                     x, y = neibhours
                     diff = (y, x) if x != 0 else (-y, x)
-                    neighbour_two = self.node_add(shortestpath[i], diff)
-                    neighbour_one = self.node_add(shortestpath[i + 1], diff)
-                    if snake_path.cheak_dead(new_head=neighbour_two) or snake_path.cheak_dead(new_head=neighbour_one):
+
+                    extra_node_1 = self.node_add(path[i], diff)
+                    extra_node_2 = self.node_add(path[i + 1], diff)
+
+                    if snake_path.dead_checking(head=extra_node_1) or snake_path.dead_checking(head=extra_node_2):
                         i += 1
                     else:
-                        shortestpath.insert(i + 1, self.node_add(shortestpath[i + 1], diff))
-                        shortestpath.insert(i + 1, self.node_add(shortestpath[i + 1], (x, y)))
+                        # Add replacement nodes
+                        path[i + 1:i + 1] = [extra_node_1, extra_node_2]
                     break
 
-        return shortestpath[1:]
+        # Exclude the first node, which is same to snake's head
+        return path[1:]
 
 
 class Human(Player):
@@ -332,6 +338,7 @@ class SnakeGame(Base):
             # new_head = BFS(snake=snake, apple=apple).next_node()
 
             # Longest Path Solver
+            # this solver is calculated per apple, not per move
             if not longgest_path_cache:
                 longgest_path_cache = LongestPath(snake=snake, apple=apple).run_longest()
             new_head = longgest_path_cache.pop(0)
