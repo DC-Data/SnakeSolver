@@ -244,7 +244,7 @@ class LongestPath(BFS):
             except IndexError:
                 break
 
-            # Build a dummy snake with body and longest path for checking if future move is replacable
+            # Build a dummy snake with body and longest path for checking if node replacement is valid
             snake_path = Snake(body=self.snake.body + path[1:])
 
             # up -> left, up, right
