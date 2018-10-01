@@ -174,7 +174,7 @@ class BFS(Player):
         """
         super().__init__(snake=snake, apple=apple)
 
-    def run(self):
+    def run_bfs(self):
         """
         Run BFS searching and return the full path of best way to apple from BFS searching
         """
@@ -204,7 +204,7 @@ class BFS(Player):
         """
         Run the BFS searching and return the next move in this path
         """
-        path = self.run()
+        path = self.run_bfs()
         return path[1]
 
 
@@ -217,7 +217,10 @@ class HamiltonianPath(Player):
         super().__init__(snake=snake, apple=apple)
 
 
-class LongestPath(Player):
+class LongestPath(BFS):
+    """
+    Given shortest path, change it to the longest path
+    """
     def __init__(self, snake: Snake, apple: Apple):
         """
         :param snake: Snake instance
@@ -225,47 +228,39 @@ class LongestPath(Player):
         """
         super().__init__(snake=snake, apple=apple)
 
-    def run(self):
-        shortestpath = BFS(snake=self.snake, apple=self.apple).run()
+    def run_longest(self):
+        """
+        For every move, check if it could be replace with three equivalent moves.
+        For example, for snake moving one step left, check if moving up, left, and down is valid. If yes, replace the
+        move with equivalent longer move. Start this over until no move can be replaced.
+        """
+        shortestpath = self.run_bfs()
+
         i = 0
         while True:
             try:
                 direction = self.node_sub(shortestpath[i], shortestpath[i + 1])
             except IndexError:
                 break
-            snake_path = Snake(body=self.snake.body[:-1] + shortestpath)
-            if direction == (1, 0):
-                if snake_path.cheak_dead(new_head=self.node_add(shortestpath[i], (0, 1))) or snake_path.cheak_dead(
-                    new_head=self.node_add(shortestpath[i + 1], (0, 1))
-                ):
-                    i = i + 1
-                else:
-                    shortestpath.insert(i + 1, self.node_add(shortestpath[i + 1], (0, 1)))
-                    shortestpath.insert(i + 1, self.node_add(shortestpath[i + 1], (1, 0)))
-            elif direction == (-1, 0):
-                if snake_path.cheak_dead(new_head=self.node_add(shortestpath[i], (0, -1))) or snake_path.cheak_dead(
-                    new_head=self.node_add(shortestpath[i + 1], (0, -1))
-                ):
-                    i = i + 1
-                else:
-                    shortestpath.insert(i + 1, self.node_add(shortestpath[i + 1], (0, -1)))
-                    shortestpath.insert(i + 1, self.node_add(shortestpath[i + 1], (-1, 0)))
-            elif direction == (0, 1):
-                if snake_path.cheak_dead(new_head=self.node_add(shortestpath[i], (-1, 0))) or snake_path.cheak_dead(
-                    new_head=self.node_add(shortestpath[i + 1], (-1, 0))
-                ):
-                    i = i + 1
-                else:
-                    shortestpath.insert(i + 1, self.node_add(shortestpath[i + 1], (-1, 0)))
-                    shortestpath.insert(i + 1, self.node_add(shortestpath[i + 1], (0, 1)))
-            elif direction == (0, -1):
-                if snake_path.cheak_dead(new_head=self.node_add(shortestpath[i], (1, 0))) or snake_path.cheak_dead(
-                    new_head=self.node_add(shortestpath[i + 1], (1, 0))
-                ):
-                    i = i + 1
-                else:
-                    shortestpath.insert(i + 1, self.node_add(shortestpath[i + 1], (1, 0)))
-                    shortestpath.insert(i + 1, self.node_add(shortestpath[i + 1], (0, -1)))
+            snake_path = Snake(body=self.snake.body + shortestpath[1:])
+
+            # up -> left, up, right
+            # down -> right, down, left
+            # left -> up, left, down
+            # right -> down, right, up
+            for neibhours in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+                if direction == neibhours:
+                    x, y = neibhours
+                    diff = (y, x) if x != 0 else (-y, x)
+                    neighbour_two = self.node_add(shortestpath[i], diff)
+                    neighbour_one = self.node_add(shortestpath[i + 1], diff)
+                    if snake_path.cheak_dead(new_head=neighbour_two) or snake_path.cheak_dead(new_head=neighbour_one):
+                        i += 1
+                    else:
+                        shortestpath.insert(i + 1, self.node_add(shortestpath[i + 1], diff))
+                        shortestpath.insert(i + 1, self.node_add(shortestpath[i + 1], (x, y)))
+                    break
+
         return shortestpath[1:]
 
 
@@ -320,7 +315,7 @@ class SnakeGame(Base):
 
         step_time = []
 
-        longgest_path = LongestPath(snake=snake, apple=apple).run()
+        longgest_path_cache = []
 
         while True:
             # Human Player
@@ -337,11 +332,9 @@ class SnakeGame(Base):
             # new_head = BFS(snake=snake, apple=apple).next_node()
 
             # Longest Path Solver
-            try:
-                new_head = longgest_path.pop(0)
-            except IndexError:
-                longgest_path = LongestPath(snake=snake, apple=apple).run()
-                new_head = longgest_path.pop(0)
+            if not longgest_path_cache:
+                longgest_path_cache = LongestPath(snake=snake, apple=apple).run_longest()
+            new_head = longgest_path_cache.pop(0)
 
             end_time = time.time()
             move_time = end_time - start_time
