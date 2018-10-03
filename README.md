@@ -2,7 +2,15 @@
 
 This repo is under heavy development.
 
-Snake Solver is an AI-played Snake game, looking for perfect solution in shortest steps. The GUI is implemented with PyGame. The algorithm is a mixed method of BFS, Hamiltonian path, A* searching and forward checking. 
+Snake Solver is an AI-played Snake game, looking for perfect solution in shortest steps. The GUI is implemented with PyGame. The algorithm is a mixed method of BFS, Hamiltonian path, A* searching and forward checking.
+
+# TODO
+
+* A* algorithm
+* Forward checking
+* Mixing above methods 
+* Screen recording
+* Benchmarks
 
 ## References
 1. Al Sweigart. (2012). Wormy. Making Games with Python & Pygame. Retrieved from https://github.com/asweigart/making-games-with-python-and-pygame/blob/master/wormy/wormy.py
