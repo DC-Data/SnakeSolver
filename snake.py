@@ -18,14 +18,15 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
 DARKGRAY = (40, 40, 40)
 
 
 @dataclass
 class Base:
     cell_size: int = 20
-    cell_width: int = 16
-    cell_height: int = 16
+    cell_width: int = 12
+    cell_height: int = 12
     window_width = cell_size * cell_width
     window_height = cell_size * cell_height
 
@@ -239,6 +240,8 @@ class LongestPath(BFS):
         """
         path = self.run_bfs()
 
+        print(f'longest path initial result: {path}')
+
         if path is None:
             print(f"Has no Longest path")
             return
@@ -290,13 +293,16 @@ class Fowardcheck(Player):
 
         path = bfs.run_bfs()
 
+        print("trying BFS")
+
         if path is None:
             snake_tail = Apple()
             snake_tail.location = self.snake.body[0]
-            next_node = LongestPath(snake=self.snake, apple=snake_tail, **self.kwargs).run_longest()
-            print('BFS failed')
-            print(f'body: {self.snake.body}')
-            print(f'tail: {snake_tail.location}')
+            snake = Snake(body=self.snake.body[1:])
+            longest_path = LongestPath(snake=snake, apple=snake_tail, **self.kwargs).run_longest()
+            next_node = longest_path[0]
+            print("BFS not reachable, trying head to tail")
+            print(next_node)
             return next_node
 
         length = len(self.snake.body)
@@ -305,19 +311,18 @@ class Fowardcheck(Player):
         virtual_snake_tail.location = (self.snake.body + path[1:])[-length - 1]
         virtual_snake = Snake(body=virtual_snake_body)
         virtual_snake_longest = LongestPath(snake=virtual_snake, apple=virtual_snake_tail, **self.kwargs)
-        print('virtual snake longest')
-        print(f'body: {virtual_snake.body}')
-        print(f'tail: {virtual_snake_tail.location}')
-        longest_path = virtual_snake_longest.run_longest()
-        if longest_path is None:
+        virtual_snake_longest_path = virtual_snake_longest.run_longest()
+        if virtual_snake_longest_path is None:
             snake_tail = Apple()
             snake_tail.location = self.snake.body[0]
-            print('Virtual snake failed')
-            print(f'body: {self.snake.body}')
-            print(f'tail: {snake_tail.location}')
-            next_node = LongestPath(snake=self.snake, apple=snake_tail, **self.kwargs).run_longest()
+            snake = Snake(body=self.snake.body[1:])
+            longest_path = LongestPath(snake=snake, apple=snake_tail, **self.kwargs).run_longest()
+            next_node = longest_path[0]
+            print("virtual snake not reachable, trying head to tail")
+            print(next_node)
             return next_node
         else:
+            print("BFS accepted")
             return path[1]
 
 
@@ -458,7 +463,6 @@ class SnakeGame(Base):
 
             #FORWARD CHECKING
             new_head = Fowardcheck(snake=snake, apple=apple, **self.kwargs).run_forwardcheck()
-            # print(new_head)
 
             end_time = time.time()
             move_time = end_time - start_time
@@ -512,6 +516,12 @@ class SnakeGame(Base):
         y = snake_body[-1][1] * self.cell_size
         snake_block = pygame.Rect(x, y, self.cell_size - 1, self.cell_size - 1)
         pygame.draw.rect(self.display, GREEN, snake_block)
+
+        # Draw snake's tail
+        x = snake_body[0][0] * self.cell_size
+        y = snake_body[0][1] * self.cell_size
+        snake_block = pygame.Rect(x, y, self.cell_size - 1, self.cell_size - 1)
+        pygame.draw.rect(self.display, BLUE, snake_block)
 
     def draw_apple(self, apple_location):
         apple_x, apple_y = apple_location
