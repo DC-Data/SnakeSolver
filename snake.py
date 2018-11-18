@@ -208,6 +208,8 @@ class BFS(Player):
 
             queue.pop(0)
 
+        raise IndexError('Snake has no path')
+
     def next_node(self):
         """
         Run the BFS searching and return the next move in this path
@@ -269,8 +271,29 @@ class LongestPath(BFS):
         # Exclude the first node, which is same to snake's head
         return path[1:]
 
-class Astar(Player):
+class fowardcheck(LongestPath):
+    def __init__(self, snake: Snake, apple: Apple, **kwargs):
+        """
+        :param snake: Snake instance
+        :param apple: Apple instance
+        """
+        super().__init__(snake=snake, apple=apple, **kwargs)
+        self.kwargs = kwargs
 
+    def run_forwardcheck(self):
+        try:
+            path = self.run_bfs()
+            
+        except IndexError:
+            path =self.run_longest()
+
+
+
+
+
+
+
+class Astar(Player):
     def __init__(self, snake: Snake, apple: Apple, **kwargs):
         """
         :param snake: Snake instance
@@ -395,7 +418,7 @@ class SnakeGame(Base):
             start_time = time.time()
 
             # BFS Solver
-            # new_head = BFS(snake=snake, apple=apple, **self.kwargs).next_node()
+            new_head = BFS(snake=snake, apple=apple, **self.kwargs).next_node()
 
             # Longest Path Solver
             # this solver is calculated per apple, not per move
@@ -404,7 +427,7 @@ class SnakeGame(Base):
             # new_head = longgest_path_cache.pop(0)
 
             # A star Solver
-            new_head = Astar(snake=snake, apple=apple, **self.kwargs).run_astar()
+            #new_head = Astar(snake=snake, apple=apple, **self.kwargs).run_astar()
 
             end_time = time.time()
             move_time = end_time - start_time
