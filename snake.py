@@ -290,16 +290,25 @@ class Fowardcheck(Player):
             path = bfs.run_bfs()
 
             # TODO: need to add rest of the snake
-            virtual_snake_body = path
-
+            length=len(self.snake.body)
+            virtual_snake_body = (self.snake.body+path[1:])[-length:]
             virtual_snake_tail = Apple()
-            virtual_snake_tail.location = ()
-
+            virtual_snake_tail.location = virtual_snake_body[0]
             virtual_snake = Snake(body=virtual_snake_body)
-
             virtual_snake_longest = LongestPath(snake=virtual_snake, apple=virtual_snake_tail, **self.kwargs)
+            try:
+                virtual_snake_longest.run_longest()
+                return path[1]
+            except IndexError:
+                snake_tail = Apple()
+                snake_tail.location = self.snake.body[0]
+                next_node = LongestPath(snake=self.snake, apple=snake_tail, **self.kwargs).run_longest()
+                return next_node
         except IndexError:
-            path = self.run_longest()
+            snake_tail = Apple()
+            snake_tail.location = self.snake.body[0]
+            next_node = LongestPath(snake=self.snake, apple=snake_tail, **self.kwargs).run_longest()
+            return next_node
 
 
 class Astar(Player):
@@ -426,7 +435,7 @@ class SnakeGame(Base):
             start_time = time.time()
 
             # BFS Solver
-            new_head = BFS(snake=snake, apple=apple, **self.kwargs).next_node()
+            #new_head = BFS(snake=snake, apple=apple, **self.kwargs).next_node()
 
             # Longest Path Solver
             # this solver is calculated per apple, not per move
@@ -436,6 +445,9 @@ class SnakeGame(Base):
 
             # A star Solver
             #new_head = Astar(snake=snake, apple=apple, **self.kwargs).run_astar()
+
+            #FORWARD CHECKING
+            new_head=Fowardcheck(snake=snake, apple=apple, **self.kwargs).run_forwardcheck()
 
             end_time = time.time()
             move_time = end_time - start_time
