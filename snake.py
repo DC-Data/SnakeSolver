@@ -104,7 +104,7 @@ class Snake(Base):
         :return: Boolean
         """
         x, y = head
-        if not 0 <= x < self.cell_width or not 0 <= y < self.cell_height or head in self.body:
+        if not 0 <= x < self.cell_width or not 0 <= y < self.cell_height or head in self.body[1:]:
             self.is_dead = True
             return True
         return False
