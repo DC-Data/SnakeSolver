@@ -43,8 +43,10 @@ class Base:
     def mean(l):
         return round(sum(l) / len(l), 4)
 
+
 def heuristic(start, goal):
-    return (start[0]-goal[0])**2+(start[1]-goal[1])**2
+    return (start[0] - goal[0])**2 + (start[1] - goal[1])**2
+
 
 class Apple(Base):
     def __init__(self, **kwargs):
@@ -271,7 +273,8 @@ class LongestPath(BFS):
         # Exclude the first node, which is same to snake's head
         return path[1:]
 
-class fowardcheck(LongestPath):
+
+class Fowardcheck(Player):
     def __init__(self, snake: Snake, apple: Apple, **kwargs):
         """
         :param snake: Snake instance
@@ -281,16 +284,22 @@ class fowardcheck(LongestPath):
         self.kwargs = kwargs
 
     def run_forwardcheck(self):
+        bfs = BFS(snake=self.snake, apple=self.apple, **self.kwargs)
+
         try:
-            path = self.run_bfs()
-            
+            path = bfs.run_bfs()
+
+            # TODO: need to add rest of the snake
+            virtual_snake_body = path
+
+            virtual_snake_tail = Apple()
+            virtual_snake_tail.location = ()
+
+            virtual_snake = Snake(body=virtual_snake_body)
+
+            virtual_snake_longest = LongestPath(snake=virtual_snake, apple=virtual_snake_tail, **self.kwargs)
         except IndexError:
-            path =self.run_longest()
-
-
-
-
-
+            path = self.run_longest()
 
 
 class Astar(Player):
@@ -301,24 +310,25 @@ class Astar(Player):
         """
         super().__init__(snake=snake, apple=apple, **kwargs)
         self.kwargs = kwargs
+
     def run_astar(self):
-        came_from={}
-        close_list=set()
-        open_list=[]
-        goal=self.apple.location
-        start=self.snake.get_head()
-        dummy_snake=Snake(body=self.snake.body)
-        neighbors=[(1,0),(-1,0),(0,1),(0,-1),(-1,-1),(-1,1),(1,1),(1,-1)]
-        gscore = {start:0}
+        came_from = {}
+        close_list = set()
+        open_list = []
+        goal = self.apple.location
+        start = self.snake.get_head()
+        dummy_snake = Snake(body=self.snake.body)
+        neighbors = [(1, 0), (-1, 0), (0, 1), (0, -1), (-1, -1), (-1, 1), (1, 1), (1, -1)]
+        gscore = {start: 0}
         fscore = {start: heuristic(start, goal)}
-        open_list=[(fscore[start],start)]
-        print(start,goal,open_list)
+        open_list = [(fscore[start], start)]
+        print(start, goal, open_list)
         while open_list:
-            current = min(open_list, key=lambda x:x[0])[1]
+            current = min(open_list, key=lambda x: x[0])[1]
             open_list.pop(0)
             print(current)
             if current == goal:
-                data  = []
+                data = []
                 while current in came_from:
                     data.append(current)
                     current = came_from[current]
@@ -328,26 +338,24 @@ class Astar(Player):
             close_list.add(current)
 
             for neighbor in neighbors:
-                neighbor_node=self.node_add(current, neighbor)
+                neighbor_node = self.node_add(current, neighbor)
 
-                if dummy_snake.dead_checking(head=neighbor_node) or neighbor_node in close_list :
+                if dummy_snake.dead_checking(head=neighbor_node) or neighbor_node in close_list:
                     continue
-                if sum(map(abs, self.node_sub(current,neighbor_node)))==2:
-                    diff=self.node_sub(current,neighbor_node)
-                    if dummy_snake.dead_checking(head=self.node_add(neighbor_node,(0,diff[1])) ) or self.node_add(neighbor_node,(0,diff[1])) in close_list:
+                if sum(map(abs, self.node_sub(current, neighbor_node))) == 2:
+                    diff = self.node_sub(current, neighbor_node)
+                    if dummy_snake.dead_checking(head=self.node_add(neighbor_node, (0, diff[1]))
+                                                 ) or self.node_add(neighbor_node, (0, diff[1])) in close_list:
                         continue
-                    elif dummy_snake.dead_checking(head=self.node_add(neighbor_node,(diff[0],0)) ) or self.node_add(neighbor_node,(diff[0],0)) in close_list:
+                    elif dummy_snake.dead_checking(head=self.node_add(neighbor_node, (diff[0], 0))
+                                                   ) or self.node_add(neighbor_node, (diff[0], 0)) in close_list:
                         continue
-                tentative_gscore = gscore[current]+heuristic(current, neighbor_node)
-                if tentative_gscore < gscore.get(neighbor_node,0) or neighbor_node not in [i[1] for i in open_list]:
-                    gscore[neighbor_node]= tentative_gscore
-                    fscore[neighbor_node]= tentative_gscore+heuristic(neighbor_node,goal)
-                    open_list.append((fscore[neighbor_node],neighbor_node))
-                    came_from[neighbor_node]=current
-
-
-
-
+                tentative_gscore = gscore[current] + heuristic(current, neighbor_node)
+                if tentative_gscore < gscore.get(neighbor_node, 0) or neighbor_node not in [i[1] for i in open_list]:
+                    gscore[neighbor_node] = tentative_gscore
+                    fscore[neighbor_node] = tentative_gscore + heuristic(neighbor_node, goal)
+                    open_list.append((fscore[neighbor_node], neighbor_node))
+                    came_from[neighbor_node] = current
 
 
 class Human(Player):
