@@ -210,8 +210,6 @@ class BFS(Player):
 
             queue.pop(0)
 
-        raise IndexError('Snake has no path')
-
     def next_node(self):
         """
         Run the BFS searching and return the next move in this path
@@ -240,6 +238,10 @@ class LongestPath(BFS):
         move with equivalent longer move. Start this over until no move can be replaced.
         """
         path = self.run_bfs()
+
+        if path is None:
+            print(f"Has no Longest path")
+            return
 
         i = 0
         while True:
@@ -286,29 +288,37 @@ class Fowardcheck(Player):
     def run_forwardcheck(self):
         bfs = BFS(snake=self.snake, apple=self.apple, **self.kwargs)
 
-        try:
-            path = bfs.run_bfs()
+        path = bfs.run_bfs()
 
-            # TODO: need to add rest of the snake
-            length=len(self.snake.body)
-            virtual_snake_body = (self.snake.body+path[1:])[-length:]
-            virtual_snake_tail = Apple()
-            virtual_snake_tail.location = virtual_snake_body[0]
-            virtual_snake = Snake(body=virtual_snake_body)
-            virtual_snake_longest = LongestPath(snake=virtual_snake, apple=virtual_snake_tail, **self.kwargs)
-            try:
-                virtual_snake_longest.run_longest()
-                return path[1]
-            except IndexError:
-                snake_tail = Apple()
-                snake_tail.location = self.snake.body[0]
-                next_node = LongestPath(snake=self.snake, apple=snake_tail, **self.kwargs).run_longest()
-                return next_node
-        except IndexError:
+        if path is None:
             snake_tail = Apple()
             snake_tail.location = self.snake.body[0]
             next_node = LongestPath(snake=self.snake, apple=snake_tail, **self.kwargs).run_longest()
+            print('BFS failed')
+            print(f'body: {self.snake.body}')
+            print(f'tail: {snake_tail.location}')
             return next_node
+
+        length = len(self.snake.body)
+        virtual_snake_body = (self.snake.body + path[1:])[-length:]
+        virtual_snake_tail = Apple()
+        virtual_snake_tail.location = (self.snake.body + path[1:])[-length - 1]
+        virtual_snake = Snake(body=virtual_snake_body)
+        virtual_snake_longest = LongestPath(snake=virtual_snake, apple=virtual_snake_tail, **self.kwargs)
+        print('virtual snake longest')
+        print(f'body: {virtual_snake.body}')
+        print(f'tail: {virtual_snake_tail.location}')
+        longest_path = virtual_snake_longest.run_longest()
+        if longest_path is None:
+            snake_tail = Apple()
+            snake_tail.location = self.snake.body[0]
+            print('Virtual snake failed')
+            print(f'body: {self.snake.body}')
+            print(f'tail: {snake_tail.location}')
+            next_node = LongestPath(snake=self.snake, apple=snake_tail, **self.kwargs).run_longest()
+            return next_node
+        else:
+            return path[1]
 
 
 class Astar(Player):
@@ -447,7 +457,8 @@ class SnakeGame(Base):
             #new_head = Astar(snake=snake, apple=apple, **self.kwargs).run_astar()
 
             #FORWARD CHECKING
-            new_head=Fowardcheck(snake=snake, apple=apple, **self.kwargs).run_forwardcheck()
+            new_head = Fowardcheck(snake=snake, apple=apple, **self.kwargs).run_forwardcheck()
+            # print(new_head)
 
             end_time = time.time()
             move_time = end_time - start_time
