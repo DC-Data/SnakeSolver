@@ -98,14 +98,16 @@ class Snake(Base):
     def get_head(self):
         return self.body[-1]
 
-    def dead_checking(self, head):
+    def dead_checking(self, head, check=False):
         """
         Check if the snake is dead
+        :param check: if check is True, only return the checking result without updating snake.is_dead
         :return: Boolean
         """
         x, y = head
         if not 0 <= x < self.cell_width or not 0 <= y < self.cell_height or head in self.body[1:]:
-            self.is_dead = True
+            if not check:
+                self.is_dead = True
             return True
         return False
 
@@ -240,10 +242,10 @@ class LongestPath(BFS):
         """
         path = self.run_bfs()
 
-        print(f'longest path initial result: {path}')
+        # print(f'longest path initial result: {path}')
 
         if path is None:
-            print(f"Has no Longest path")
+            # print(f"Has no Longest path")
             return
 
         i = 0
@@ -301,8 +303,8 @@ class Fowardcheck(Player):
             snake = Snake(body=self.snake.body[1:])
             longest_path = LongestPath(snake=snake, apple=snake_tail, **self.kwargs).run_longest()
             next_node = longest_path[0]
-            print("BFS not reachable, trying head to tail")
-            print(next_node)
+            # print("BFS not reachable, trying head to tail")
+            # print(next_node)
             return next_node
 
         length = len(self.snake.body)
@@ -318,11 +320,72 @@ class Fowardcheck(Player):
             snake = Snake(body=self.snake.body[1:])
             longest_path = LongestPath(snake=snake, apple=snake_tail, **self.kwargs).run_longest()
             next_node = longest_path[0]
-            print("virtual snake not reachable, trying head to tail")
-            print(next_node)
+            # print("virtual snake not reachable, trying head to tail")
+            # print(next_node)
             return next_node
         else:
-            print("BFS accepted")
+            # print("BFS accepted")
+            return path[1]
+
+
+class Foward2(Player):
+    def __init__(self, snake: Snake, apple: Apple, **kwargs):
+        """
+        :param snake: Snake instance
+        :param apple: Apple instance
+        """
+        super().__init__(snake=snake, apple=apple, **kwargs)
+        self.kwargs = kwargs
+
+    def escape(self):
+        head = self.snake.get_head()
+        M=0
+        newhead1 = None
+        for neibhours in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+
+            newhead=self.node_add(head,neibhours)
+
+            if self.snake.dead_checking(head=newhead, check=True):
+                continue
+            M1 =abs(newhead[0]-self.apple.location[0])+abs(newhead[1]-self.apple.location[1])
+            if M < M1:
+                snake_tail = Apple()
+                snake_tail.location = self.snake.body[0]
+                snake = Snake(body=self.snake.body[1:])
+                bfs = BFS(snake=snake, apple=snake_tail, **self.kwargs)
+                path = bfs.run_bfs()
+                if path is not None:
+                    M = M1
+                    newhead1 = newhead
+                    print('escaped')
+        if newhead1 is None:
+            snake_tail = Apple()
+            snake_tail.location = self.snake.body[0]
+            snake = Snake(body=self.snake.body[1:])
+            longest_path = LongestPath(snake=snake, apple=snake_tail, **self.kwargs).run_longest()
+            newhead1 = longest_path[0]
+        print(newhead1)
+        return newhead1
+
+    def run_forward2(self):
+        bfs = BFS(snake=self.snake, apple=self.apple, **self.kwargs)
+
+        path = bfs.run_bfs()
+
+        if path is None:
+            return self.escape()
+
+        length = len(self.snake.body)
+        virtual_snake_body = (self.snake.body + path[1:])[-length:]
+        virtual_snake_tail = Apple()
+        virtual_snake_tail.location = (self.snake.body + path[1:])[-length - 1]
+        virtual_snake = Snake(body=virtual_snake_body)
+        virtual_snake_longest = LongestPath(snake=virtual_snake, apple=virtual_snake_tail, **self.kwargs)
+        virtual_snake_longest_path = virtual_snake_longest.run_longest()
+        if virtual_snake_longest_path is None:
+            return self.escape()
+        else:
+            # print("BFS accepted")
             return path[1]
 
 
@@ -410,7 +473,7 @@ class Human(Player):
 
 @dataclass
 class SnakeGame(Base):
-    fps: int = 90
+    fps: int = 60
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -462,7 +525,9 @@ class SnakeGame(Base):
             #new_head = Astar(snake=snake, apple=apple, **self.kwargs).run_astar()
 
             #FORWARD CHECKING
-            new_head = Fowardcheck(snake=snake, apple=apple, **self.kwargs).run_forwardcheck()
+            # new_head = Fowardcheck(snake=snake, apple=apple, **self.kwargs).run_forwardcheck()
+            new_head = Foward2(snake=snake, apple=apple, **self.kwargs).run_forward2()
+            print(new_head)
 
             end_time = time.time()
             move_time = end_time - start_time
@@ -472,6 +537,8 @@ class SnakeGame(Base):
             snake.move(new_head=new_head, apple=apple)
 
             if snake.is_dead:
+                print(snake.body)
+                print("Dead")
                 break
             elif snake.eaten:
                 apple.refresh(snake=snake)
