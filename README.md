@@ -35,3 +35,4 @@ Automatically construct a path or combination of pathes which covers the whole a
 ## References
 1. Al Sweigart. (2012). Wormy. Making Games with Python & Pygame. Retrieved from https://github.com/asweigart/making-games-with-python-and-pygame/blob/master/wormy/wormy.py
 2. Shu Kong, Joan Aguilar Mayans. (2014). Automated Snake Game Solvers via AI Search Algorithms. Retrieved from http://sites.uci.edu/joana1/files/2016/12/AutomatedSnakeGameSolvers.pdf 
+3. Chuyangliu. Path solver. Retrieved from https://github.com/chuyangliu/Snake/blob/master/docs/algorithms.md
