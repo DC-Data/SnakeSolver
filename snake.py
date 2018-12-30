@@ -9,6 +9,7 @@ from operator import add, sub
 from dataclasses import dataclass
 from itertools import product
 from typing import Tuple
+
 with contextlib.redirect_stdout(None):
     import pygame
     from pygame.locals import *
@@ -262,9 +263,9 @@ class LongestPath(BFS):
             # down -> right, down, left
             # left -> up, left, down
             # right -> down, right, up
-            for neibhours in ((0, 1), (0, -1), (1, 0), (-1, 0)):
-                if direction == neibhours:
-                    x, y = neibhours
+            for neibhour in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+                if direction == neibhour:
+                    x, y = neibhour
                     diff = (y, x) if x != 0 else (-y, x)
 
                     extra_node_1 = self.node_add(path[i], diff)
@@ -328,7 +329,7 @@ class Fowardcheck(Player):
             return path[1]
 
 
-class Foward2(Player):
+class Mixed(Player):
     def __init__(self, snake: Snake, apple: Apple, **kwargs):
         """
         :param snake: Snake instance
@@ -339,53 +340,56 @@ class Foward2(Player):
 
     def escape(self):
         head = self.snake.get_head()
-        M=0
-        newhead1 = None
-        for neibhours in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+        largest_neibhour_apple_distance = 0
+        newhead = None
+        for diff in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+            neibhour = self.node_add(head, diff)
 
-            newhead=self.node_add(head,neibhours)
-
-            if self.snake.dead_checking(head=newhead, check=True):
+            if self.snake.dead_checking(head=neibhour, check=True):
                 continue
-            M1 =abs(newhead[0]-self.apple.location[0])+abs(newhead[1]-self.apple.location[1])
-            if M < M1:
+
+            neibhour_apple_distance = (
+                abs(neibhour[0] - self.apple.location[0]) + abs(neibhour[1] - self.apple.location[1])
+            )
+            # Find the neibhour which has greatest Manhattan distance to apple and has path to tail
+            if largest_neibhour_apple_distance < neibhour_apple_distance:
                 snake_tail = Apple()
-                snake_tail.location = self.snake.body[0]
-                snake = Snake(body=self.snake.body[1:])
+                snake_tail.location = self.snake.body[1]
+                # Create a virtual snake with a neibhour as head, to see if it has a way to its tail,
+                # thus remove two nodes from body: one for moving one step forward, one for avoiding dead checking
+                snake = Snake(body=self.snake.body[2:] + [neibhour])
                 bfs = BFS(snake=snake, apple=snake_tail, **self.kwargs)
                 path = bfs.run_bfs()
-                if path is not None:
-                    M = M1
-                    newhead1 = newhead
-                    print('escaped')
-        if newhead1 is None:
-            snake_tail = Apple()
-            snake_tail.location = self.snake.body[0]
-            snake = Snake(body=self.snake.body[1:])
-            longest_path = LongestPath(snake=snake, apple=snake_tail, **self.kwargs).run_longest()
-            newhead1 = longest_path[0]
-        print(newhead1)
-        return newhead1
+                if path is None:
+                    continue
+                largest_neibhour_apple_distance = neibhour_apple_distance
+                newhead = neibhour
+        return newhead
 
-    def run_forward2(self):
+    def run_mixed(self):
+        """
+        Mixed strategy
+        """
         bfs = BFS(snake=self.snake, apple=self.apple, **self.kwargs)
 
         path = bfs.run_bfs()
 
+        # If the snake does not have the path to apple, try to follow its tail to escape
         if path is None:
             return self.escape()
 
+        # Send a virtual snake to see when it reaches the apple, does it still have a path to its own tail, to keep it
+        # alive
         length = len(self.snake.body)
         virtual_snake_body = (self.snake.body + path[1:])[-length:]
         virtual_snake_tail = Apple()
         virtual_snake_tail.location = (self.snake.body + path[1:])[-length - 1]
         virtual_snake = Snake(body=virtual_snake_body)
-        virtual_snake_longest = LongestPath(snake=virtual_snake, apple=virtual_snake_tail, **self.kwargs)
-        virtual_snake_longest_path = virtual_snake_longest.run_longest()
+        virtual_snake_longest = BFS(snake=virtual_snake, apple=virtual_snake_tail, **self.kwargs)
+        virtual_snake_longest_path = virtual_snake_longest.run_bfs()
         if virtual_snake_longest_path is None:
             return self.escape()
         else:
-            # print("BFS accepted")
             return path[1]
 
 
@@ -401,7 +405,6 @@ class Astar(Player):
     def run_astar(self):
         came_from = {}
         close_list = set()
-        open_list = []
         goal = self.apple.location
         start = self.snake.get_head()
         dummy_snake = Snake(body=self.snake.body)
@@ -513,7 +516,7 @@ class SnakeGame(Base):
             start_time = time.time()
 
             # BFS Solver
-            #new_head = BFS(snake=snake, apple=apple, **self.kwargs).next_node()
+            # new_head = BFS(snake=snake, apple=apple, **self.kwargs).next_node()
 
             # Longest Path Solver
             # this solver is calculated per apple, not per move
@@ -522,11 +525,11 @@ class SnakeGame(Base):
             # new_head = longgest_path_cache.pop(0)
 
             # A star Solver
-            #new_head = Astar(snake=snake, apple=apple, **self.kwargs).run_astar()
+            # new_head = Astar(snake=snake, apple=apple, **self.kwargs).run_astar()
 
-            #FORWARD CHECKING
+            # FORWARD CHECKING
             # new_head = Fowardcheck(snake=snake, apple=apple, **self.kwargs).run_forwardcheck()
-            new_head = Foward2(snake=snake, apple=apple, **self.kwargs).run_forward2()
+            new_head = Mixed(snake=snake, apple=apple, **self.kwargs).run_mixed()
             print(new_head)
 
             end_time = time.time()
