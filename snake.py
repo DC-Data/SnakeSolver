@@ -485,7 +485,6 @@ class SnakeGame(Base):
         pygame.init()
         self.clock = pygame.time.Clock()
         self.display = pygame.display.set_mode((self.window_width, self.window_height))
-        self.basic_font = pygame.font.Font('freesansbold.ttf', 18)
         pygame.display.set_caption('Perfect Snake')
 
     def launch(self):
@@ -545,6 +544,9 @@ class SnakeGame(Base):
                 break
             elif snake.eaten:
                 apple.refresh(snake=snake)
+
+            if snake.score + snake.initial_length >= self.cell_width * self.cell_height:
+                break
 
             self.display.fill(BLACK)
             self.draw_panel()
